@@ -28,6 +28,14 @@ export type ParspackApiErrorPayload = {
   errors?: unknown[];
 };
 
+export type ParspackZone = {
+  uuid: string;
+  target_domain: string;
+  id?: string | number;
+  status?: string;
+  plan?: string;
+};
+
 export type ParspackRequestOptions = {
   token: string;
   path: string;

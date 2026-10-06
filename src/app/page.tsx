@@ -1,6 +1,5 @@
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -8,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { DomainSelector } from "@/components/zones/domain-selector";
 
 const statistics = [
   { label: "Total Requests", tone: "neutral" as const },
@@ -20,17 +20,23 @@ export default function Home() {
   return (
     <DashboardShell>
       <div className="mx-auto max-w-7xl">
-        <section aria-labelledby="page-title">
-          <Badge variant="accent">Local dashboard</Badge>
-          <h1
-            id="page-title"
-            className="mt-4 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl"
-          >
-            Access Logs
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-            Inspect and export CDN requests for SEO and infrastructure analysis.
-          </p>
+        <section
+          aria-labelledby="page-title"
+          className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between"
+        >
+          <div>
+            <Badge variant="accent">Local dashboard</Badge>
+            <h1
+              id="page-title"
+              className="mt-4 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl"
+            >
+              Access Logs
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
+              Inspect and export CDN requests for SEO and infrastructure analysis.
+            </p>
+          </div>
+          <DomainSelector />
         </section>
 
         <section aria-labelledby="summary-title" className="mt-8">
@@ -62,10 +68,10 @@ export default function Home() {
               <div>
                 <CardTitle id="access-logs-title">Access Logs</CardTitle>
                 <CardDescription>
-                  Connect your Parspack account to start exploring logs.
+                  Access-log retrieval will be added in the next step.
                 </CardDescription>
               </div>
-              <Badge variant="neutral">Not connected</Badge>
+              <Badge variant="neutral">Data not loaded</Badge>
             </CardHeader>
             <CardContent>
               <div className="flex min-h-64 flex-col items-center justify-center rounded-[var(--radius-md)] border border-dashed border-border bg-surface-secondary px-5 py-10 text-center sm:min-h-72">
@@ -77,11 +83,8 @@ export default function Home() {
                 </span>
                 <h3 className="mt-4 text-sm font-semibold text-foreground">No access logs yet</h3>
                 <p className="mt-1 max-w-sm text-sm leading-6 text-muted-foreground">
-                  Account connection and log retrieval will be added in a future step.
+                  Choose a CDN domain above to prepare this workspace for future log requests.
                 </p>
-                <Button className="mt-5" size="sm" disabled>
-                  Connect account
-                </Button>
               </div>
             </CardContent>
           </Card>

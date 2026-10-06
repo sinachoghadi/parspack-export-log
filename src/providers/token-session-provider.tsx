@@ -16,6 +16,7 @@ type TokenSessionContextValue = {
   token: string | null;
   hasToken: boolean;
   isHydrated: boolean;
+  tokenVersion: number;
   setToken: (token: string) => void;
   clearToken: () => void;
 };
@@ -29,6 +30,7 @@ const TokenSessionContext = createContext<TokenSessionContextValue | null>(null)
 export function TokenSessionProvider({ children }: TokenSessionProviderProps) {
   const [token, setTokenState] = useState<string | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [tokenVersion, setTokenVersion] = useState(0);
 
   useEffect(() => {
     try {
@@ -37,6 +39,7 @@ export function TokenSessionProvider({ children }: TokenSessionProviderProps) {
 
       if (trimmedToken) {
         setTokenState(trimmedToken);
+        setTokenVersion((version) => version + 1);
 
         if (trimmedToken !== storedToken) {
           window.sessionStorage.setItem(TOKEN_STORAGE_KEY, trimmedToken);
@@ -58,11 +61,13 @@ export function TokenSessionProvider({ children }: TokenSessionProviderProps) {
 
     window.sessionStorage.setItem(TOKEN_STORAGE_KEY, trimmedToken);
     setTokenState(trimmedToken);
+    setTokenVersion((version) => version + 1);
   }, []);
 
   const clearToken = useCallback(() => {
     window.sessionStorage.removeItem(TOKEN_STORAGE_KEY);
     setTokenState(null);
+    setTokenVersion((version) => version + 1);
   }, []);
 
   const value = useMemo<TokenSessionContextValue>(
@@ -70,10 +75,11 @@ export function TokenSessionProvider({ children }: TokenSessionProviderProps) {
       token,
       hasToken: token !== null,
       isHydrated,
+      tokenVersion,
       setToken,
       clearToken,
     }),
-    [clearToken, isHydrated, setToken, token],
+    [clearToken, isHydrated, setToken, token, tokenVersion],
   );
 
   return (

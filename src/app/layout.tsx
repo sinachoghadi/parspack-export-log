@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { TokenModal } from "@/components/auth/token-modal";
 import { QueryProvider } from "@/providers/query-provider";
+import { ActiveZoneProvider } from "@/providers/active-zone-provider";
 import { TokenSessionProvider } from "@/providers/token-session-provider";
 
 import "./globals.css";
@@ -22,7 +23,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
       <body>
         <QueryProvider>
           <TokenSessionProvider>
-            {children}
+            <ActiveZoneProvider>{children}</ActiveZoneProvider>
             <TokenModal />
           </TokenSessionProvider>
         </QueryProvider>
