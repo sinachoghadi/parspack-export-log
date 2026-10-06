@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { LogsFilters } from "@/components/logs/logs-filters";
+import { SeoQuickFilters } from "@/components/logs/seo-quick-filters";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -22,6 +23,10 @@ import type {
   AccessLogQueryParams,
   AccessLogStep,
 } from "@/lib/parspack/types";
+import {
+  toggleSeoFilterPreset,
+  type SeoQuickFilter,
+} from "@/lib/parspack/seo-quick-filters";
 
 export function AccessLogsSection() {
   const [draftFilters, setDraftFilters] = useState<AccessLogFilterDraft>(
@@ -31,6 +36,9 @@ export function AccessLogsSection() {
     useState<AccessLogQueryParams>({});
   const [filterErrors, setFilterErrors] =
     useState<AccessLogFilterErrors>({});
+  const [quickFilterMessage, setQuickFilterMessage] = useState<string | null>(
+    null,
+  );
   const [page, setPage] = useState(1);
   const [step] = useState<AccessLogStep>(50);
   const accessLogsQuery = useAccessLogs({
@@ -44,10 +52,34 @@ export function AccessLogsSection() {
   const handleDraftChange = (nextFilters: AccessLogFilterDraft) => {
     setDraftFilters(nextFilters);
     setFilterErrors({});
+    setQuickFilterMessage(null);
   };
 
   const handleApply = () => {
     const result = buildAccessLogQueryParams(draftFilters);
+
+    if (!result.success) {
+      setFilterErrors(result.errors);
+      return;
+    }
+
+    setFilterErrors({});
+    setAppliedFilters(result.params);
+    setPage(1);
+    setQuickFilterMessage(null);
+  };
+
+  const handleQuickFilter = (preset: SeoQuickFilter) => {
+    if (preset.kind === "informational") {
+      setQuickFilterMessage(preset.message);
+      return;
+    }
+
+    const nextDraftFilters = toggleSeoFilterPreset(preset, draftFilters);
+    const result = buildAccessLogQueryParams(nextDraftFilters);
+
+    setDraftFilters(nextDraftFilters);
+    setQuickFilterMessage(null);
 
     if (!result.success) {
       setFilterErrors(result.errors);
@@ -63,11 +95,18 @@ export function AccessLogsSection() {
     setDraftFilters(EMPTY_ACCESS_LOG_FILTERS);
     setAppliedFilters({});
     setFilterErrors({});
+    setQuickFilterMessage(null);
     setPage(1);
   };
 
   return (
     <section aria-labelledby="access-logs-title" className="mt-6 space-y-4">
+      <SeoQuickFilters
+        message={quickFilterMessage}
+        value={draftFilters}
+        onSelect={handleQuickFilter}
+      />
+
       <LogsFilters
         errors={filterErrors}
         isApplying={accessLogsQuery.isFetching}
