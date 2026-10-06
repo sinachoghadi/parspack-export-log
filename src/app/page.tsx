@@ -1,11 +1,11 @@
 import { DashboardShell } from "@/components/layout/dashboard-shell";
+import { AccessLogsSection } from "@/components/logs/access-logs-section";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { DomainSelector } from "@/components/zones/domain-selector";
 
@@ -62,33 +62,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section aria-labelledby="access-logs-title" className="mt-6">
-          <Card>
-            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <CardTitle id="access-logs-title">Access Logs</CardTitle>
-                <CardDescription>
-                  Access-log retrieval will be added in the next step.
-                </CardDescription>
-              </div>
-              <Badge variant="neutral">Data not loaded</Badge>
-            </CardHeader>
-            <CardContent>
-              <div className="flex min-h-64 flex-col items-center justify-center rounded-[var(--radius-md)] border border-dashed border-border bg-surface-secondary px-5 py-10 text-center sm:min-h-72">
-                <span className="flex size-12 items-center justify-center rounded-2xl bg-accent-soft text-accent">
-                  <svg aria-hidden="true" className="size-6" viewBox="0 0 24 24" fill="none">
-                    <path d="M5 5.5h14v13H5v-13Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-                    <path d="M8 9h8M8 12h8M8 15h5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-                  </svg>
-                </span>
-                <h3 className="mt-4 text-sm font-semibold text-foreground">No access logs yet</h3>
-                <p className="mt-1 max-w-sm text-sm leading-6 text-muted-foreground">
-                  Choose a CDN domain above to prepare this workspace for future log requests.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
+        <AccessLogsSection />
       </div>
     </DashboardShell>
   );
