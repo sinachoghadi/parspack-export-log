@@ -2,6 +2,7 @@
 
 import { useCallback, useState } from "react";
 
+import { ExportCurrentResultsButton } from "@/components/logs/export-current-results-button";
 import { LogDetailDrawer } from "@/components/logs/log-detail-drawer";
 import { LogKpiCards } from "@/components/logs/log-kpi-cards";
 import { LogsFilters } from "@/components/logs/logs-filters";
@@ -26,8 +27,10 @@ import {
   toggleSeoFilterPreset,
   type SeoQuickFilter,
 } from "@/lib/parspack/seo-quick-filters";
+import { useActiveZone } from "@/providers/active-zone-provider";
 
 export function AccessLogsSection() {
+  const { activeDomain } = useActiveZone();
   const [draftFilters, setDraftFilters] = useState<AccessLogFilterDraft>(
     EMPTY_ACCESS_LOG_FILTERS,
   );
@@ -143,22 +146,31 @@ export function AccessLogsSection() {
               Requests returned by the active domain and applied filters.
             </CardDescription>
           </div>
-          <Badge
-            aria-live="polite"
-            variant={
-              accessLogsQuery.isError
-                ? "danger"
+          <div className="flex w-full flex-col items-start gap-3 sm:w-auto sm:items-end">
+            <Badge
+              aria-live="polite"
+              variant={
+                accessLogsQuery.isError
+                  ? "danger"
+                  : accessLogsQuery.isFetching
+                    ? "accent"
+                    : "neutral"
+              }
+            >
+              {accessLogsQuery.isError
+                ? "Request failed"
                 : accessLogsQuery.isFetching
-                  ? "accent"
-                  : "neutral"
-            }
-          >
-            {accessLogsQuery.isError
-              ? "Request failed"
-              : accessLogsQuery.isFetching
-                ? "Refreshing..."
-                : `${logs.length} records`}
-          </Badge>
+                  ? "Refreshing..."
+                  : `${logs.length} records`}
+            </Badge>
+            <ExportCurrentResultsButton
+              domain={activeDomain}
+              from={appliedFilters.from}
+              isLoading={accessLogsQuery.data === undefined}
+              logs={logs}
+              to={appliedFilters.to}
+            />
+          </div>
         </CardHeader>
         <LogsTable
           error={accessLogsQuery.error}
