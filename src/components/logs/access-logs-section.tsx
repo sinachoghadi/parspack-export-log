@@ -3,15 +3,11 @@
 import { useState } from "react";
 
 import { LogsFilters } from "@/components/logs/logs-filters";
+import { LogsPagination } from "@/components/logs/logs-pagination";
+import { LogsTable } from "@/components/logs/logs-table";
 import { SeoQuickFilters } from "@/components/logs/seo-quick-filters";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAccessLogs } from "@/hooks/use-access-logs";
 import {
   buildAccessLogQueryParams,
@@ -40,7 +36,7 @@ export function AccessLogsSection() {
     null,
   );
   const [page, setPage] = useState(1);
-  const [step] = useState<AccessLogStep>(50);
+  const [step, setStep] = useState<AccessLogStep>(50);
   const accessLogsQuery = useAccessLogs({
     params: {
       page,
@@ -99,6 +95,15 @@ export function AccessLogsSection() {
     setPage(1);
   };
 
+  const handleStepChange = (nextStep: AccessLogStep) => {
+    setStep(nextStep);
+    setPage(1);
+  };
+
+  const logs = accessLogsQuery.data?.records ?? [];
+  // Without API pagination metadata, a full page is the only safe next-page signal.
+  const hasNextPage = logs.length === step;
+
   return (
     <section aria-labelledby="access-logs-title" className="mt-6 space-y-4">
       <SeoQuickFilters
@@ -121,29 +126,43 @@ export function AccessLogsSection() {
           <div>
             <CardTitle id="access-logs-title">Access Logs</CardTitle>
             <CardDescription>
-              The filter request is ready; the logs table arrives in the next step.
+              Requests returned by the active domain and applied filters.
             </CardDescription>
           </div>
-          <Badge variant={accessLogsQuery.isError ? "danger" : "neutral"}>
-            {accessLogsQuery.isError ? "Request failed" : "Table not added"}
+          <Badge
+            aria-live="polite"
+            variant={
+              accessLogsQuery.isError
+                ? "danger"
+                : accessLogsQuery.isFetching
+                  ? "accent"
+                  : "neutral"
+            }
+          >
+            {accessLogsQuery.isError
+              ? "Request failed"
+              : accessLogsQuery.isFetching
+                ? "Refreshing..."
+                : `${logs.length} records`}
           </Badge>
         </CardHeader>
-        <CardContent>
-          <div className="flex min-h-52 flex-col items-center justify-center rounded-[var(--radius-md)] border border-dashed border-border bg-surface-secondary px-5 py-10 text-center">
-            <span className="flex size-12 items-center justify-center rounded-2xl bg-accent-soft text-accent">
-              <svg aria-hidden="true" className="size-6" viewBox="0 0 24 24" fill="none">
-                <path d="M5 5.5h14v13H5v-13Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
-                <path d="M8 9h8M8 12h8M8 15h5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-              </svg>
-            </span>
-            <h3 className="mt-4 text-sm font-semibold text-foreground">
-              Log table coming next
-            </h3>
-            <p className="mt-1 max-w-sm text-sm leading-6 text-muted-foreground">
-              Apply filters now to prepare the request without rendering raw log data.
-            </p>
-          </div>
-        </CardContent>
+        <LogsTable
+          error={accessLogsQuery.error}
+          isFetching={accessLogsQuery.isFetching}
+          isLoading={accessLogsQuery.isLoading}
+          logs={logs}
+          onRetry={() => {
+            void accessLogsQuery.refetch();
+          }}
+        />
+        <LogsPagination
+          hasNextPage={hasNextPage}
+          isFetching={accessLogsQuery.isFetching}
+          page={page}
+          step={step}
+          onPageChange={setPage}
+          onStepChange={handleStepChange}
+        />
       </Card>
     </section>
   );
