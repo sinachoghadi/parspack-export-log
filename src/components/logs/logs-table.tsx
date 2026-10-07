@@ -7,8 +7,10 @@ import {
   type ColumnDef,
 } from "@tanstack/react-table";
 
+import { StatusBadge } from "@/components/logs/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { formatAccessLogTimestamp } from "@/lib/parspack/access-log-formatters";
 import { ParspackApiError } from "@/lib/parspack/errors";
 import type { AccessLog } from "@/lib/parspack/types";
 
@@ -17,48 +19,10 @@ type LogsTableProps = {
   isLoading?: boolean;
   isFetching?: boolean;
   error?: Error | null;
+  selectedLogId?: string | null;
   onRetry?: () => void;
+  onSelectLog?: (log: AccessLog) => void;
 };
-
-const dateTimeFormatter = new Intl.DateTimeFormat("en-CA", {
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-  hour: "2-digit",
-  minute: "2-digit",
-  second: "2-digit",
-  hour12: false,
-});
-
-function formatTimestamp(timestamp: string): string {
-  const date = new Date(timestamp);
-
-  if (Number.isNaN(date.getTime())) {
-    return timestamp;
-  }
-
-  return dateTimeFormatter.format(date).replace(",", "");
-}
-
-function getStatusVariant(statusCode: number) {
-  if (statusCode >= 200 && statusCode <= 299) {
-    return "success" as const;
-  }
-
-  if (statusCode >= 300 && statusCode <= 399) {
-    return "accent" as const;
-  }
-
-  if (statusCode >= 400 && statusCode <= 499) {
-    return "warning" as const;
-  }
-
-  if (statusCode >= 500 && statusCode <= 599) {
-    return "danger" as const;
-  }
-
-  return "neutral" as const;
-}
 
 function getErrorMessage(error: Error): string {
   if (error instanceof ParspackApiError) {
@@ -89,7 +53,7 @@ const columns: ColumnDef<AccessLog>[] = [
         dateTime={row.original.timestamp}
         title={row.original.timestamp}
       >
-        {formatTimestamp(row.original.timestamp)}
+        {formatAccessLogTimestamp(row.original.timestamp)}
       </time>
     ),
   },
@@ -121,9 +85,7 @@ const columns: ColumnDef<AccessLog>[] = [
     header: "Status",
     size: 80,
     cell: ({ row }) => (
-      <Badge variant={getStatusVariant(row.original.statusCode)}>
-        {row.original.statusCode}
-      </Badge>
+      <StatusBadge statusCode={row.original.statusCode} />
     ),
   },
   {
@@ -211,7 +173,9 @@ export function LogsTable({
   isLoading = false,
   isFetching = false,
   error = null,
+  selectedLogId = null,
   onRetry,
+  onSelectLog,
 }: LogsTableProps) {
   // TanStack Table v8 intentionally returns non-memoizable functions; keep its table instance local.
   // eslint-disable-next-line react-hooks/incompatible-library
@@ -276,7 +240,8 @@ export function LogsTable({
         style={{ width: table.getCenterTotalSize() }}
       >
         <caption className="sr-only">
-          CDN access logs for the current page and filters
+          CDN access logs for the current page and filters. Select a row and
+          press Enter or Space to view request details.
         </caption>
         <thead className="bg-surface-secondary">
           {table.getHeaderGroups().map((headerGroup) => (
@@ -303,7 +268,33 @@ export function LogsTable({
           {table.getRowModel().rows.map((row) => (
             <tr
               key={row.id}
-              className="border-b border-border/80 transition-colors last:border-b-0 hover:bg-surface-secondary/70"
+              aria-selected={
+                onSelectLog ? row.original.id === selectedLogId : undefined
+              }
+              className={`border-b border-border/80 transition-colors last:border-b-0 ${
+                onSelectLog
+                  ? "cursor-pointer hover:bg-surface-secondary/70 focus-visible:bg-accent-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
+                  : "hover:bg-surface-secondary/70"
+              } ${row.original.id === selectedLogId ? "bg-accent-soft/70" : ""}`}
+              tabIndex={onSelectLog ? 0 : undefined}
+              title={onSelectLog ? "Open request details" : undefined}
+              onClick={(event) => {
+                if (
+                  event.target instanceof HTMLElement &&
+                  event.target.closest("button, a, input, select, textarea")
+                ) {
+                  return;
+                }
+
+                event.currentTarget.focus();
+                onSelectLog?.(row.original);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onSelectLog?.(row.original);
+                }
+              }}
             >
               {row.getVisibleCells().map((cell) => (
                 <td key={cell.id} className="px-4 py-3.5 align-middle">

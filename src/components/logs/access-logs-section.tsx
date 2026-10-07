@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
+import { LogDetailDrawer } from "@/components/logs/log-detail-drawer";
 import { LogsFilters } from "@/components/logs/logs-filters";
 import { LogsPagination } from "@/components/logs/logs-pagination";
 import { LogsTable } from "@/components/logs/logs-table";
@@ -16,6 +17,7 @@ import {
   type AccessLogFilterErrors,
 } from "@/lib/parspack/access-log-filters";
 import type {
+  AccessLog,
   AccessLogQueryParams,
   AccessLogStep,
 } from "@/lib/parspack/types";
@@ -37,6 +39,7 @@ export function AccessLogsSection() {
   );
   const [page, setPage] = useState(1);
   const [step, setStep] = useState<AccessLogStep>(50);
+  const [selectedLog, setSelectedLog] = useState<AccessLog | null>(null);
   const accessLogsQuery = useAccessLogs({
     params: {
       page,
@@ -100,6 +103,10 @@ export function AccessLogsSection() {
     setPage(1);
   };
 
+  const closeLogDetails = useCallback(() => {
+    setSelectedLog(null);
+  }, []);
+
   const logs = accessLogsQuery.data?.records ?? [];
   // Without API pagination metadata, a full page is the only safe next-page signal.
   const hasNextPage = logs.length === step;
@@ -151,9 +158,11 @@ export function AccessLogsSection() {
           isFetching={accessLogsQuery.isFetching}
           isLoading={accessLogsQuery.isLoading}
           logs={logs}
+          selectedLogId={selectedLog?.id}
           onRetry={() => {
             void accessLogsQuery.refetch();
           }}
+          onSelectLog={setSelectedLog}
         />
         <LogsPagination
           hasNextPage={hasNextPage}
@@ -164,6 +173,8 @@ export function AccessLogsSection() {
           onStepChange={handleStepChange}
         />
       </Card>
+
+      <LogDetailDrawer log={selectedLog} onClose={closeLogDetails} />
     </section>
   );
 }
