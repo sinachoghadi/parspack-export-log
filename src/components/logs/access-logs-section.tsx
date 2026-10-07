@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react";
 
 import { LogDetailDrawer } from "@/components/logs/log-detail-drawer";
+import { LogKpiCards } from "@/components/logs/log-kpi-cards";
 import { LogsFilters } from "@/components/logs/logs-filters";
 import { LogsPagination } from "@/components/logs/logs-pagination";
 import { LogsTable } from "@/components/logs/logs-table";
@@ -112,7 +113,13 @@ export function AccessLogsSection() {
   const hasNextPage = logs.length === step;
 
   return (
-    <section aria-labelledby="access-logs-title" className="mt-6 space-y-4">
+    <section aria-labelledby="access-logs-title" className="mt-8 space-y-4">
+      <LogKpiCards
+        isFetching={accessLogsQuery.isFetching}
+        isLoading={accessLogsQuery.data === undefined}
+        logs={logs}
+      />
+
       <SeoQuickFilters
         message={quickFilterMessage}
         value={draftFilters}

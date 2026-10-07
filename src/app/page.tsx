@@ -1,20 +1,7 @@
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 import { AccessLogsSection } from "@/components/logs/access-logs-section";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-} from "@/components/ui/card";
 import { DomainSelector } from "@/components/zones/domain-selector";
-
-const statistics = [
-  { label: "Total Requests", tone: "neutral" as const },
-  { label: "Crawlers", tone: "accent" as const },
-  { label: "4xx Responses", tone: "warning" as const },
-  { label: "5xx Responses", tone: "danger" as const },
-];
 
 export default function Home() {
   return (
@@ -37,29 +24,6 @@ export default function Home() {
             </p>
           </div>
           <DomainSelector />
-        </section>
-
-        <section aria-labelledby="summary-title" className="mt-8">
-          <h2 id="summary-title" className="sr-only">
-            Access log summary
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {statistics.map((statistic) => (
-              <Card key={statistic.label} className="min-h-36">
-                <CardHeader className="flex-row items-start justify-between gap-3">
-                  <CardDescription className="mt-0 font-medium">
-                    {statistic.label}
-                  </CardDescription>
-                  <Badge variant={statistic.tone}>Awaiting data</Badge>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-3xl font-semibold tracking-tight text-foreground" aria-label="No data available">
-                    --
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
         </section>
 
         <AccessLogsSection />
