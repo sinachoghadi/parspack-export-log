@@ -1,7 +1,6 @@
 import Link from "next/link";
 
 import { IconButton } from "@/components/ui/icon-button";
-import { Input } from "@/components/ui/input";
 
 const mobileNavigation = ["Overview", "Access Logs", "Exports"];
 
@@ -20,22 +19,6 @@ export function Topbar() {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="relative hidden w-56 sm:block lg:w-64">
-            <label htmlFor="dashboard-search" className="sr-only">
-              Search access logs
-            </label>
-            <svg
-              aria-hidden="true"
-              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-              viewBox="0 0 24 24"
-              fill="none"
-            >
-              <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="1.8" />
-              <path d="m16 16 4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-            </svg>
-            <Input id="dashboard-search" type="search" placeholder="Search..." className="pl-9" />
-          </div>
-
           <IconButton aria-label="Notifications are not available yet" disabled>
             <svg aria-hidden="true" className="size-[18px]" viewBox="0 0 24 24" fill="none">
               <path d="M6.5 10a5.5 5.5 0 0 1 11 0c0 5 2 5 2 6.5h-15c0-1.5 2-1.5 2-6.5ZM10 19h4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
@@ -50,22 +33,6 @@ export function Topbar() {
             LU
           </div>
         </div>
-      </div>
-
-      <div className="relative mt-4 sm:hidden">
-        <label htmlFor="mobile-dashboard-search" className="sr-only">
-          Search access logs
-        </label>
-        <svg
-          aria-hidden="true"
-          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-          viewBox="0 0 24 24"
-          fill="none"
-        >
-          <circle cx="11" cy="11" r="6.5" stroke="currentColor" strokeWidth="1.8" />
-          <path d="m16 16 4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-        </svg>
-        <Input id="mobile-dashboard-search" type="search" placeholder="Search..." className="pl-9" />
       </div>
 
       <nav aria-label="Mobile navigation" className="mt-4 flex gap-1 overflow-x-auto md:hidden">

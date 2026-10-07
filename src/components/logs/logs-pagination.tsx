@@ -32,7 +32,8 @@ export function LogsPagination({
         Rows per page
         <select
           aria-label="Rows per page"
-          className="h-9 rounded-[var(--radius-sm)] border border-border bg-surface px-2.5 text-sm font-medium text-foreground outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20"
+          className="h-9 rounded-[var(--radius-sm)] border border-border bg-surface px-2.5 text-sm font-medium text-foreground outline-none transition focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/20 disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={isFetching}
           value={step}
           onChange={(event) => {
             const nextStep = Number(event.target.value);

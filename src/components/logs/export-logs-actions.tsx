@@ -10,13 +10,13 @@ import {
   type ExportProgress,
 } from "@/lib/export/fetch-all-access-logs";
 import {
-  ParspackApiError,
-  ParspackNetworkError,
-} from "@/lib/parspack/errors";
+  getParspackErrorMessage,
+} from "@/lib/parspack/error-message";
 import type {
   AccessLog,
   AccessLogQueryParams,
 } from "@/lib/parspack/types";
+import { useToast } from "@/providers/toast-provider";
 
 type ExportLogsActionsProps = {
   appliedFilters: AccessLogQueryParams;
@@ -38,29 +38,10 @@ function getFullExportErrorMessage(error: unknown): string {
     return error.message;
   }
 
-  if (error instanceof ParspackApiError) {
-    if (error.status === 401) {
-      return "Your API token is invalid or expired.";
-    }
-
-    if (error.status === 403) {
-      return "Your API token does not have permission to access these logs.";
-    }
-
-    if (error.status === 429) {
-      return "Parspack rate limit reached. Please wait and try again.";
-    }
-
-    if (error.status >= 500) {
-      return "Parspack returned a server error while exporting logs.";
-    }
-  }
-
-  if (error instanceof ParspackNetworkError) {
-    return "Unable to reach Parspack while exporting logs.";
-  }
-
-  return "Unable to export all filtered logs.";
+  return getParspackErrorMessage(
+    error,
+    "Unable to export all filtered logs.",
+  );
 }
 
 function DownloadIcon() {
@@ -90,6 +71,7 @@ export function ExportLogsActions({
   token,
   zoneUuid,
 }: ExportLogsActionsProps) {
+  const { toast } = useToast();
   const abortControllerRef = useRef<AbortController | null>(null);
   const [isExportingCurrent, setIsExportingCurrent] = useState(false);
   const [fullExportStage, setFullExportStage] =
@@ -98,8 +80,6 @@ export function ExportLogsActions({
     pagesFetched: 0,
     recordsFetched: 0,
   });
-  const [message, setMessage] = useState<string | null>(null);
-  const [hasError, setHasError] = useState(false);
   const isExportingAll = fullExportStage !== "idle";
   const hasDateRange = Boolean(appliedFilters.from || appliedFilters.to);
 
@@ -112,8 +92,6 @@ export function ExportLogsActions({
 
   const handleCurrentExport = async () => {
     setIsExportingCurrent(true);
-    setMessage(null);
-    setHasError(false);
 
     try {
       await exportAccessLogsToExcel({
@@ -122,10 +100,9 @@ export function ExportLogsActions({
         from: appliedFilters.from,
         to: appliedFilters.to,
       });
-      setMessage("Current results exported.");
+      toast({ type: "success", message: "Current results exported." });
     } catch {
-      setHasError(true);
-      setMessage("Unable to export current results.");
+      toast({ type: "error", message: "Unable to export current results." });
     } finally {
       setIsExportingCurrent(false);
     }
@@ -138,8 +115,10 @@ export function ExportLogsActions({
     const filtersSnapshot = { ...appliedFilters };
 
     if (!tokenSnapshot || !zoneUuidSnapshot) {
-      setHasError(true);
-      setMessage("Connect to a CDN domain before exporting logs.");
+      toast({
+        type: "error",
+        message: "Connect to a CDN domain before exporting logs.",
+      });
       return;
     }
 
@@ -147,8 +126,6 @@ export function ExportLogsActions({
     abortControllerRef.current = controller;
     setFullExportStage("fetching");
     setProgress({ pagesFetched: 0, recordsFetched: 0 });
-    setMessage(null);
-    setHasError(false);
 
     try {
       const logs = await fetchAllAccessLogs({
@@ -160,7 +137,10 @@ export function ExportLogsActions({
       });
 
       if (logs.length === 0) {
-        setMessage("No logs found for the current filters.");
+        toast({
+          type: "info",
+          message: "No logs found for the current filters.",
+        });
         return;
       }
 
@@ -173,11 +153,13 @@ export function ExportLogsActions({
         scope: "all",
         signal: controller.signal,
       });
-      setMessage(`All ${logs.length.toLocaleString("en-US")} filtered logs exported.`);
+      toast({
+        type: "success",
+        message: `All ${logs.length.toLocaleString("en-US")} filtered logs exported.`,
+      });
     } catch (error) {
       if (!isAbortError(error)) {
-        setHasError(true);
-        setMessage(getFullExportErrorMessage(error));
+        toast({ type: "error", message: getFullExportErrorMessage(error) });
       }
     } finally {
       if (abortControllerRef.current === controller) {
@@ -190,8 +172,7 @@ export function ExportLogsActions({
 
   const handleCancel = () => {
     abortControllerRef.current?.abort();
-    setMessage(null);
-    setHasError(false);
+    toast({ type: "info", message: "Full export cancelled." });
   };
 
   return (
@@ -225,7 +206,7 @@ export function ExportLogsActions({
           }}
         >
           <DownloadIcon />
-          Export all filtered logs
+          {isExportingAll ? "Exporting..." : "Export all filtered logs"}
         </Button>
       </div>
 
@@ -246,29 +227,24 @@ export function ExportLogsActions({
           <p className="font-semibold">
             {fullExportStage === "building"
               ? "Preparing Excel file..."
-              : "Exporting all filtered logs"}
+              : "Fetching logs..."}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {progress.pagesFetched.toLocaleString("en-US")} pages fetched ·{" "}
+            {progress.pagesFetched.toLocaleString("en-US")} pages ·{" "}
             {progress.recordsFetched.toLocaleString("en-US")} records
           </p>
-          <Button
-            className="mt-2"
-            size="sm"
-            variant="ghost"
-            onClick={handleCancel}
-          >
-            Cancel
-          </Button>
+          {fullExportStage === "fetching" ? (
+            <Button
+              className="mt-2"
+              size="sm"
+              variant="ghost"
+              onClick={handleCancel}
+            >
+              Cancel
+            </Button>
+          ) : null}
         </div>
       ) : null}
-
-      <p
-        aria-live="polite"
-        className={`mt-2 text-xs ${hasError ? "text-danger" : "text-success"}`}
-      >
-        {message}
-      </p>
     </div>
   );
 }

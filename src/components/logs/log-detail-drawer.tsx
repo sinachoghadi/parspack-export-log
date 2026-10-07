@@ -3,7 +3,6 @@
 import {
   useEffect,
   useRef,
-  useState,
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
@@ -17,6 +16,7 @@ import {
   formatBytes,
 } from "@/lib/parspack/access-log-formatters";
 import type { AccessLog } from "@/lib/parspack/types";
+import { useToast } from "@/providers/toast-provider";
 
 type LogDetailDrawerProps = {
   log: AccessLog | null;
@@ -36,8 +36,6 @@ type DetailSectionProps = {
   title: string;
 };
 
-type CopyState = "idle" | "copied" | "error";
-
 const focusableSelector = [
   "button:not([disabled])",
   "a[href]",
@@ -53,17 +51,7 @@ function DetailItem({
   monospace = false,
   copyable = false,
 }: DetailItemProps) {
-  const [copyState, setCopyState] = useState<CopyState>("idle");
-  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(
-    () => () => {
-      if (resetTimerRef.current) {
-        clearTimeout(resetTimerRef.current);
-      }
-    },
-    [],
-  );
+  const { toast } = useToast();
 
   const handleCopy = async () => {
     try {
@@ -72,16 +60,10 @@ function DetailItem({
       }
 
       await navigator.clipboard.writeText(value);
-      setCopyState("copied");
+      toast({ type: "success", message: `${label} copied.` });
     } catch {
-      setCopyState("error");
+      toast({ type: "error", message: `Unable to copy ${label}.` });
     }
-
-    if (resetTimerRef.current) {
-      clearTimeout(resetTimerRef.current);
-    }
-
-    resetTimerRef.current = setTimeout(() => setCopyState("idle"), 1800);
   };
 
   return (
@@ -108,11 +90,7 @@ function DetailItem({
               void handleCopy();
             }}
           >
-            {copyState === "copied"
-              ? "Copied"
-              : copyState === "error"
-                ? "Unable to copy"
-                : "Copy"}
+            Copy
           </Button>
         ) : null}
       </dd>

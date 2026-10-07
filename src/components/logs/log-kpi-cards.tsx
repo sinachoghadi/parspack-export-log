@@ -1,4 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { calculateAccessLogSummary } from "@/lib/parspack/access-log-summary";
 import type { AccessLog } from "@/lib/parspack/types";
 
@@ -93,13 +94,13 @@ function KpiCardSkeleton() {
       className="min-h-40"
       role="status"
     >
-      <CardContent className="min-h-40 animate-pulse p-5 pt-5 motion-reduce:animate-none sm:p-5 sm:pt-5">
+      <CardContent className="min-h-40 p-5 pt-5 sm:p-5 sm:pt-5">
         <div className="flex items-start justify-between gap-3">
-          <span className="mt-1 h-3 w-24 rounded-full bg-border" />
-          <span className="size-9 rounded-[var(--radius-md)] bg-surface-secondary" />
+          <Skeleton className="mt-1 h-3 w-24" />
+          <Skeleton className="size-9 rounded-[var(--radius-md)] bg-surface-secondary" />
         </div>
-        <span className="mt-8 block h-8 w-20 rounded-lg bg-border" />
-        <span className="mt-3 block h-2.5 w-16 rounded-full bg-surface-secondary" />
+        <Skeleton className="mt-8 h-8 w-20 rounded-lg" />
+        <Skeleton className="mt-3 h-2.5 w-16 bg-surface-secondary" />
       </CardContent>
     </Card>
   );
@@ -147,7 +148,7 @@ export function LogKpiCards({
       <h2 id="log-summary-title" className="sr-only">
         Current page access log summary
       </h2>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
         {isLoading
           ? Array.from({ length: 5 }, (_, index) => (
               <KpiCardSkeleton key={index} />

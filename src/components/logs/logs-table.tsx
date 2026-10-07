@@ -10,8 +10,9 @@ import {
 import { StatusBadge } from "@/components/logs/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatAccessLogTimestamp } from "@/lib/parspack/access-log-formatters";
-import { ParspackApiError } from "@/lib/parspack/errors";
+import { getParspackErrorMessage } from "@/lib/parspack/error-message";
 import type { AccessLog } from "@/lib/parspack/types";
 
 type LogsTableProps = {
@@ -20,27 +21,12 @@ type LogsTableProps = {
   isFetching?: boolean;
   error?: Error | null;
   selectedLogId?: string | null;
+  hasActiveFilters?: boolean;
+  isRetrying?: boolean;
+  onResetFilters?: () => void;
   onRetry?: () => void;
   onSelectLog?: (log: AccessLog) => void;
 };
-
-function getErrorMessage(error: Error): string {
-  if (error instanceof ParspackApiError) {
-    if (error.status === 401) {
-      return "Your API token is invalid or expired.";
-    }
-
-    if (error.status === 403) {
-      return "Your API token does not have permission to access these logs.";
-    }
-
-    if (error.status === 429) {
-      return "Too many requests. Please try again shortly.";
-    }
-  }
-
-  return "Unable to load access logs.";
-}
 
 const columns: ColumnDef<AccessLog>[] = [
   {
@@ -139,12 +125,12 @@ const columns: ColumnDef<AccessLog>[] = [
 function TableSkeleton() {
   return (
     <div aria-label="Loading access logs" className="overflow-x-auto" role="status">
-      <div className="min-w-[1147px] animate-pulse motion-reduce:animate-none">
+      <div className="min-w-[1147px]">
         <div className="grid grid-cols-[160px_72px_220px_80px_125px_270px_100px_120px] gap-0 border-b border-border bg-surface-secondary px-4 py-3">
           {columns.map((column, index) => (
-            <span
+            <Skeleton
               key={column.id ?? index}
-              className="h-3 w-20 rounded-full bg-border"
+              className="h-3 w-20"
             />
           ))}
         </div>
@@ -154,9 +140,9 @@ function TableSkeleton() {
             className="grid grid-cols-[160px_72px_220px_80px_125px_270px_100px_120px] items-center border-b border-border/80 px-4 py-4 last:border-b-0"
           >
             {columns.map((column, columnIndex) => (
-              <span
+              <Skeleton
                 key={column.id ?? columnIndex}
-                className={`h-3 rounded-full bg-surface-secondary ${
+                className={`h-3 bg-surface-secondary ${
                   columnIndex === 2 || columnIndex === 5 ? "w-4/5" : "w-3/5"
                 }`}
               />
@@ -174,6 +160,9 @@ export function LogsTable({
   isFetching = false,
   error = null,
   selectedLogId = null,
+  hasActiveFilters = false,
+  isRetrying = false,
+  onResetFilters,
   onRetry,
   onSelectLog,
 }: LogsTableProps) {
@@ -191,7 +180,7 @@ export function LogsTable({
     return <TableSkeleton />;
   }
 
-  if (error) {
+  if (error && logs.length === 0) {
     return (
       <div className="flex min-h-64 flex-col items-center justify-center px-5 py-10 text-center">
         <span className="flex size-11 items-center justify-center rounded-2xl bg-danger-soft text-danger">
@@ -203,11 +192,17 @@ export function LogsTable({
           Could not load access logs
         </h3>
         <p className="mt-1 max-w-md text-sm leading-6 text-muted-foreground">
-          {getErrorMessage(error)}
+          {getParspackErrorMessage(error, "Unable to load access logs. Try again.")}
         </p>
         {onRetry ? (
-          <Button className="mt-4" size="sm" variant="secondary" onClick={onRetry}>
-            Retry
+          <Button
+            className="mt-4 min-w-20"
+            disabled={isRetrying}
+            size="sm"
+            variant="secondary"
+            onClick={onRetry}
+          >
+            {isRetrying ? "Retrying..." : "Retry"}
           </Button>
         ) : null}
       </div>
@@ -224,11 +219,21 @@ export function LogsTable({
           </svg>
         </span>
         <h3 className="mt-4 text-sm font-semibold text-foreground">
-          No access logs found for the current filters.
+          No access logs found
         </h3>
         <p className="mt-1 text-sm leading-6 text-muted-foreground">
           Try adjusting the date range or filters.
         </p>
+        {hasActiveFilters && onResetFilters ? (
+          <Button
+            className="mt-4"
+            size="sm"
+            variant="secondary"
+            onClick={onResetFilters}
+          >
+            Reset filters
+          </Button>
+        ) : null}
       </div>
     );
   }

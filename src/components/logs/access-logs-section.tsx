@@ -114,6 +114,9 @@ export function AccessLogsSection() {
   }, []);
 
   const logs = accessLogsQuery.data?.records ?? [];
+  const hasActiveFilters = Object.keys(appliedFilters).length > 0;
+  const canResetFilters =
+    hasActiveFilters || Object.values(draftFilters).some(Boolean);
   // Without API pagination metadata, a full page is the only safe next-page signal.
   const hasNextPage = logs.length === step;
 
@@ -134,6 +137,7 @@ export function AccessLogsSection() {
       <LogsFilters
         errors={filterErrors}
         isApplying={accessLogsQuery.isFetching}
+        canReset={canResetFilters}
         value={draftFilters}
         onApply={handleApply}
         onChange={handleDraftChange}
@@ -162,7 +166,9 @@ export function AccessLogsSection() {
               {accessLogsQuery.isError
                 ? "Request failed"
                 : accessLogsQuery.isFetching
-                  ? "Refreshing..."
+                  ? accessLogsQuery.data === undefined
+                    ? "Loading access logs..."
+                    : "Updating results..."
                   : `${logs.length} records`}
             </Badge>
             <ExportLogsActions
@@ -177,10 +183,13 @@ export function AccessLogsSection() {
         </CardHeader>
         <LogsTable
           error={accessLogsQuery.error}
+          hasActiveFilters={hasActiveFilters}
           isFetching={accessLogsQuery.isFetching}
           isLoading={accessLogsQuery.isLoading}
+          isRetrying={accessLogsQuery.isError && accessLogsQuery.isFetching}
           logs={logs}
           selectedLogId={selectedLog?.id}
+          onResetFilters={handleReset}
           onRetry={() => {
             void accessLogsQuery.refetch();
           }}

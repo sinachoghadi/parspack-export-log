@@ -32,6 +32,7 @@ const ACCESS_LOG_METHODS: AccessLogMethod[] = [
 type LogsFiltersProps = {
   value: AccessLogFilterDraft;
   errors?: AccessLogFilterErrors;
+  canReset?: boolean;
   isApplying?: boolean;
   onChange: (value: AccessLogFilterDraft) => void;
   onApply: () => void;
@@ -42,7 +43,7 @@ type FilterField = keyof AccessLogFilterDraft;
 
 const fieldLabelStyles = "mb-1.5 block text-sm font-medium text-foreground";
 const selectStyles =
-  "h-10 w-full rounded-[var(--radius-sm)] border border-border bg-surface px-3 text-sm text-foreground shadow-sm outline-none transition focus:border-accent focus:ring-2 focus:ring-accent/20";
+  "h-10 w-full rounded-[var(--radius-sm)] border border-border bg-surface px-3 text-sm text-foreground shadow-sm outline-none transition focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/20";
 const errorStyles = "mt-1.5 text-xs font-medium text-danger";
 
 function isAccessLogMethod(value: string): value is AccessLogMethod {
@@ -52,6 +53,7 @@ function isAccessLogMethod(value: string): value is AccessLogMethod {
 export function LogsFilters({
   value,
   errors = {},
+  canReset = true,
   isApplying = false,
   onChange,
   onApply,
@@ -220,12 +222,19 @@ export function LogsFilters({
           </div>
 
           <div className="mt-5 flex flex-col-reverse gap-2 border-t border-border pt-5 sm:flex-row sm:items-center sm:justify-end">
-            <Button className="w-full sm:w-auto" onClick={onReset} type="button" variant="secondary">
+            <Button
+              className="w-full sm:w-auto"
+              disabled={!canReset || isApplying}
+              onClick={onReset}
+              type="button"
+              variant="secondary"
+            >
               Reset
             </Button>
             <Button
               aria-busy={isApplying}
               className="w-full sm:w-auto"
+              disabled={isApplying}
               type="submit"
             >
               {isApplying ? (
