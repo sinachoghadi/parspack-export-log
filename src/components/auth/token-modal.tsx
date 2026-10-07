@@ -1,36 +1,72 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+} from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/providers/toast-provider";
 import { useTokenSession } from "@/providers/token-session-provider";
 
 const MAX_TOKEN_LENGTH = 4096;
 
 export function TokenModal() {
-  const { hasToken, isHydrated, setToken } = useTokenSession();
+  const {
+    cancelTokenChange,
+    hasToken,
+    isChangingToken,
+    isHydrated,
+    setToken,
+  } = useTokenSession();
+  const { toast } = useToast();
   const [tokenInput, setTokenInput] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const isOpen = isHydrated && !hasToken;
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const isChangeMode = hasToken && isChangingToken;
+  const isOpen = isHydrated && (!hasToken || isChangingToken);
 
   useEffect(() => {
     if (!isOpen) {
       return;
     }
 
+    previousFocusRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     inputRef.current?.focus();
 
     return () => {
       document.body.style.overflow = previousOverflow;
+      previousFocusRef.current?.focus();
     };
   }, [isOpen]);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  const resetInput = () => {
+    setTokenInput("");
+    setError(null);
+  };
+
+  const handleCancel = () => {
+    if (!isChangeMode || isSubmitting) {
+      return;
+    }
+
+    resetInput();
+    cancelTokenChange();
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const trimmedToken = tokenInput.trim();
@@ -42,11 +78,32 @@ export function TokenModal() {
     }
 
     setError(null);
-    setToken(trimmedToken);
-    setTokenInput("");
-  }
+    setIsSubmitting(true);
 
-  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    try {
+      await setToken(trimmedToken);
+      resetInput();
+      toast({
+        type: "success",
+        message: isChangeMode
+          ? "API token changed."
+          : "Connected to Parspack.",
+      });
+    } catch {
+      setError("Unable to store the API token. Try again.");
+      inputRef.current?.focus();
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Escape" && isChangeMode) {
+      event.preventDefault();
+      handleCancel();
+      return;
+    }
+
     if (event.key !== "Tab") {
       return;
     }
@@ -69,7 +126,7 @@ export function TokenModal() {
       event.preventDefault();
       firstElement.focus();
     }
-  }
+  };
 
   if (!isOpen) {
     return null;
@@ -83,12 +140,13 @@ export function TokenModal() {
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-foreground/35 p-4 backdrop-blur-[2px] sm:p-6">
       <div
         ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="token-modal-title"
+        aria-busy={isSubmitting}
         aria-describedby="token-modal-description"
-        onKeyDown={handleKeyDown}
+        aria-labelledby="token-modal-title"
+        aria-modal="true"
         className="w-full max-w-md rounded-[var(--radius-xl)] border border-border bg-surface p-6 shadow-[0_24px_80px_rgba(24,24,27,0.18)] sm:p-8"
+        role="dialog"
+        onKeyDown={handleKeyDown}
       >
         <span className="flex size-11 items-center justify-center rounded-2xl bg-accent-soft text-accent">
           <svg aria-hidden="true" className="size-5" viewBox="0 0 24 24" fill="none">
@@ -101,26 +159,33 @@ export function TokenModal() {
           id="token-modal-title"
           className="mt-5 text-2xl font-semibold tracking-tight text-foreground"
         >
-          Connect to Parspack
+          {isChangeMode ? "Change API token" : "Connect to Parspack"}
         </h2>
         <p
           id="token-modal-description"
           className="mt-2 text-sm leading-6 text-muted-foreground"
         >
-          Enter your Parspack API token to access CDN logs.
+          {isChangeMode
+            ? "Enter a new Parspack API token."
+            : "Enter your Parspack API token to access CDN logs."}
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-6" noValidate>
+        <form className="mt-6" noValidate onSubmit={handleSubmit}>
           <label htmlFor="api-token" className="text-sm font-semibold text-foreground">
             API Token
           </label>
           <Input
             ref={inputRef}
-            id="api-token"
-            name="api-token"
-            type="password"
+            aria-describedby={describedBy}
+            aria-invalid={error ? true : undefined}
             autoComplete="off"
+            className="mt-2"
+            disabled={isSubmitting}
+            id="api-token"
             maxLength={MAX_TOKEN_LENGTH}
+            name="api-token"
+            placeholder="Enter your API token"
+            type="password"
             value={tokenInput}
             onChange={(event) => {
               setTokenInput(event.target.value);
@@ -129,13 +194,10 @@ export function TokenModal() {
                 setError(null);
               }
             }}
-            placeholder="Enter your API token"
-            aria-invalid={error ? true : undefined}
-            aria-describedby={describedBy}
-            className="mt-2"
           />
           <p id="api-token-helper" className="mt-2 text-xs leading-5 text-muted-foreground">
-            Your token is stored only in this browser session and is removed when the session ends.
+            Your token is stored only in this browser session. It is removed
+            when the session ends or when you disconnect.
           </p>
           {error ? (
             <p id="api-token-error" role="alert" className="mt-2 text-sm font-medium text-danger">
@@ -143,9 +205,30 @@ export function TokenModal() {
             </p>
           ) : null}
 
-          <Button type="submit" className="mt-6 w-full">
-            Continue
-          </Button>
+          <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            {isChangeMode ? (
+              <Button
+                className="w-full sm:w-auto"
+                disabled={isSubmitting}
+                type="button"
+                variant="secondary"
+                onClick={handleCancel}
+              >
+                Cancel
+              </Button>
+            ) : null}
+            <Button
+              className="w-full min-w-28 sm:w-auto"
+              disabled={isSubmitting}
+              type="submit"
+            >
+              {isSubmitting
+                ? "Saving..."
+                : isChangeMode
+                  ? "Change token"
+                  : "Continue"}
+            </Button>
+          </div>
         </form>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { IconButton } from "@/components/ui/icon-button";
+import { ParspackConnectionControl } from "@/components/auth/parspack-connection-control";
 
 const mobileNavigation = ["Overview", "Access Logs", "Exports"];
 
@@ -18,21 +18,7 @@ export function Topbar() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
-          <IconButton aria-label="Notifications are not available yet" disabled>
-            <svg aria-hidden="true" className="size-[18px]" viewBox="0 0 24 24" fill="none">
-              <path d="M6.5 10a5.5 5.5 0 0 1 11 0c0 5 2 5 2 6.5h-15c0-1.5 2-1.5 2-6.5ZM10 19h4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </IconButton>
-
-          <div
-            className="flex size-10 items-center justify-center rounded-full bg-foreground text-xs font-semibold text-white"
-            aria-label="Local user"
-            role="img"
-          >
-            LU
-          </div>
-        </div>
+        <ParspackConnectionControl />
       </div>
 
       <nav aria-label="Mobile navigation" className="mt-4 flex gap-1 overflow-x-auto md:hidden">

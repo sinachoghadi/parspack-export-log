@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useZones } from "@/hooks/use-zones";
 import { getParspackErrorMessage } from "@/lib/parspack/error-message";
+import { ParspackApiError } from "@/lib/parspack/errors";
 import { useActiveZone } from "@/providers/active-zone-provider";
 import { useTokenSession } from "@/providers/token-session-provider";
 
 export function DomainSelector() {
-  const { hasToken } = useTokenSession();
+  const { hasToken, openTokenChange } = useTokenSession();
   const { activeZone, setActiveZone } = useActiveZone();
   const {
     data: zones = [],
@@ -50,16 +51,22 @@ export function DomainSelector() {
         <p className="text-sm font-medium text-danger">
           {getParspackErrorMessage(error, "Unable to load CDN domains. Try again.")}
         </p>
-        <Button
-          type="button"
-          size="sm"
-          variant="secondary"
-          className="mt-2"
-          disabled={isFetching}
-          onClick={() => void refetch()}
-        >
-          {isFetching ? "Retrying..." : "Retry"}
-        </Button>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            disabled={isFetching}
+            onClick={() => void refetch()}
+          >
+            {isFetching ? "Retrying..." : "Retry"}
+          </Button>
+          {error instanceof ParspackApiError && error.status === 401 ? (
+            <Button size="sm" variant="ghost" onClick={openTokenChange}>
+              Change token
+            </Button>
+          ) : null}
+        </div>
       </div>
     );
   }

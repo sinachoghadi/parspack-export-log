@@ -32,7 +32,7 @@ import { useTokenSession } from "@/providers/token-session-provider";
 
 export function AccessLogsSection() {
   const { activeDomain, activeZoneUuid } = useActiveZone();
-  const { token } = useTokenSession();
+  const { openTokenChange, token } = useTokenSession();
   const [draftFilters, setDraftFilters] = useState<AccessLogFilterDraft>(
     EMPTY_ACCESS_LOG_FILTERS,
   );
@@ -189,6 +189,7 @@ export function AccessLogsSection() {
           isRetrying={accessLogsQuery.isError && accessLogsQuery.isFetching}
           logs={logs}
           selectedLogId={selectedLog?.id}
+          onChangeToken={openTokenChange}
           onResetFilters={handleReset}
           onRetry={() => {
             void accessLogsQuery.refetch();

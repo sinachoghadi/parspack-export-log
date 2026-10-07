@@ -73,6 +73,7 @@ export function ExportLogsActions({
 }: ExportLogsActionsProps) {
   const { toast } = useToast();
   const abortControllerRef = useRef<AbortController | null>(null);
+  const previousTokenRef = useRef(token);
   const [isExportingCurrent, setIsExportingCurrent] = useState(false);
   const [fullExportStage, setFullExportStage] =
     useState<FullExportStage>("idle");
@@ -89,6 +90,21 @@ export function ExportLogsActions({
     },
     [],
   );
+
+  useEffect(() => {
+    if (
+      previousTokenRef.current !== token &&
+      abortControllerRef.current
+    ) {
+      abortControllerRef.current.abort();
+      toast({
+        type: "info",
+        message: "Full export cancelled because the connection changed.",
+      });
+    }
+
+    previousTokenRef.current = token;
+  }, [toast, token]);
 
   const handleCurrentExport = async () => {
     setIsExportingCurrent(true);

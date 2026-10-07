@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatAccessLogTimestamp } from "@/lib/parspack/access-log-formatters";
 import { getParspackErrorMessage } from "@/lib/parspack/error-message";
+import { ParspackApiError } from "@/lib/parspack/errors";
 import type { AccessLog } from "@/lib/parspack/types";
 
 type LogsTableProps = {
@@ -25,6 +26,7 @@ type LogsTableProps = {
   isRetrying?: boolean;
   onResetFilters?: () => void;
   onRetry?: () => void;
+  onChangeToken?: () => void;
   onSelectLog?: (log: AccessLog) => void;
 };
 
@@ -164,6 +166,7 @@ export function LogsTable({
   isRetrying = false,
   onResetFilters,
   onRetry,
+  onChangeToken,
   onSelectLog,
 }: LogsTableProps) {
   // TanStack Table v8 intentionally returns non-memoizable functions; keep its table instance local.
@@ -194,17 +197,26 @@ export function LogsTable({
         <p className="mt-1 max-w-md text-sm leading-6 text-muted-foreground">
           {getParspackErrorMessage(error, "Unable to load access logs. Try again.")}
         </p>
-        {onRetry ? (
-          <Button
-            className="mt-4 min-w-20"
-            disabled={isRetrying}
-            size="sm"
-            variant="secondary"
-            onClick={onRetry}
-          >
-            {isRetrying ? "Retrying..." : "Retry"}
-          </Button>
-        ) : null}
+        <div className="mt-4 flex flex-wrap justify-center gap-2">
+          {onRetry ? (
+            <Button
+              className="min-w-20"
+              disabled={isRetrying}
+              size="sm"
+              variant="secondary"
+              onClick={onRetry}
+            >
+              {isRetrying ? "Retrying..." : "Retry"}
+            </Button>
+          ) : null}
+          {error instanceof ParspackApiError &&
+          error.status === 401 &&
+          onChangeToken ? (
+            <Button size="sm" variant="ghost" onClick={onChangeToken}>
+              Change token
+            </Button>
+          ) : null}
+        </div>
       </div>
     );
   }

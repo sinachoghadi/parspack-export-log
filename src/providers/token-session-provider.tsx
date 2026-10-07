@@ -1,5 +1,6 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import {
   createContext,
   useCallback,
@@ -10,15 +11,21 @@ import {
   type ReactNode,
 } from "react";
 
-const TOKEN_STORAGE_KEY = "parspack_api_token";
+import {
+  PARSPACK_ACTIVE_ZONE_STORAGE_KEY,
+  PARSPACK_TOKEN_STORAGE_KEY,
+} from "@/lib/parspack/session-storage";
 
 type TokenSessionContextValue = {
   token: string | null;
   hasToken: boolean;
   isHydrated: boolean;
+  isChangingToken: boolean;
   tokenVersion: number;
-  setToken: (token: string) => void;
-  clearToken: () => void;
+  setToken: (token: string) => Promise<void>;
+  clearToken: () => Promise<void>;
+  openTokenChange: () => void;
+  cancelTokenChange: () => void;
 };
 
 type TokenSessionProviderProps = Readonly<{
@@ -28,13 +35,17 @@ type TokenSessionProviderProps = Readonly<{
 const TokenSessionContext = createContext<TokenSessionContextValue | null>(null);
 
 export function TokenSessionProvider({ children }: TokenSessionProviderProps) {
+  const queryClient = useQueryClient();
   const [token, setTokenState] = useState<string | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [isChangingToken, setIsChangingToken] = useState(false);
   const [tokenVersion, setTokenVersion] = useState(0);
 
   useEffect(() => {
     try {
-      const storedToken = window.sessionStorage.getItem(TOKEN_STORAGE_KEY);
+      const storedToken = window.sessionStorage.getItem(
+        PARSPACK_TOKEN_STORAGE_KEY,
+      );
       const trimmedToken = storedToken?.trim() ?? "";
 
       if (trimmedToken) {
@@ -42,32 +53,54 @@ export function TokenSessionProvider({ children }: TokenSessionProviderProps) {
         setTokenVersion((version) => version + 1);
 
         if (trimmedToken !== storedToken) {
-          window.sessionStorage.setItem(TOKEN_STORAGE_KEY, trimmedToken);
+          window.sessionStorage.setItem(
+            PARSPACK_TOKEN_STORAGE_KEY,
+            trimmedToken,
+          );
         }
       } else if (storedToken !== null) {
-        window.sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+        window.sessionStorage.removeItem(PARSPACK_TOKEN_STORAGE_KEY);
       }
     } finally {
       setIsHydrated(true);
     }
   }, []);
 
-  const setToken = useCallback((nextToken: string) => {
+  const clearParspackQueries = useCallback(async () => {
+    await queryClient.cancelQueries({ queryKey: ["parspack"] });
+    queryClient.removeQueries({ queryKey: ["parspack"] });
+  }, [queryClient]);
+
+  const setToken = useCallback(async (nextToken: string) => {
     const trimmedToken = nextToken.trim();
 
     if (!trimmedToken) {
       return;
     }
 
-    window.sessionStorage.setItem(TOKEN_STORAGE_KEY, trimmedToken);
+    await clearParspackQueries();
+    window.sessionStorage.removeItem(PARSPACK_ACTIVE_ZONE_STORAGE_KEY);
+    window.sessionStorage.setItem(PARSPACK_TOKEN_STORAGE_KEY, trimmedToken);
     setTokenState(trimmedToken);
     setTokenVersion((version) => version + 1);
-  }, []);
+    setIsChangingToken(false);
+  }, [clearParspackQueries]);
 
-  const clearToken = useCallback(() => {
-    window.sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+  const clearToken = useCallback(async () => {
+    await clearParspackQueries();
+    window.sessionStorage.removeItem(PARSPACK_TOKEN_STORAGE_KEY);
+    window.sessionStorage.removeItem(PARSPACK_ACTIVE_ZONE_STORAGE_KEY);
     setTokenState(null);
     setTokenVersion((version) => version + 1);
+    setIsChangingToken(false);
+  }, [clearParspackQueries]);
+
+  const openTokenChange = useCallback(() => {
+    setIsChangingToken(true);
+  }, []);
+
+  const cancelTokenChange = useCallback(() => {
+    setIsChangingToken(false);
   }, []);
 
   const value = useMemo<TokenSessionContextValue>(
@@ -75,11 +108,23 @@ export function TokenSessionProvider({ children }: TokenSessionProviderProps) {
       token,
       hasToken: token !== null,
       isHydrated,
+      isChangingToken,
       tokenVersion,
       setToken,
       clearToken,
+      openTokenChange,
+      cancelTokenChange,
     }),
-    [clearToken, isHydrated, setToken, token, tokenVersion],
+    [
+      cancelTokenChange,
+      clearToken,
+      isChangingToken,
+      isHydrated,
+      openTokenChange,
+      setToken,
+      token,
+      tokenVersion,
+    ],
   );
 
   return (

@@ -12,10 +12,9 @@ import {
 } from "react";
 
 import { useZones } from "@/hooks/use-zones";
+import { PARSPACK_ACTIVE_ZONE_STORAGE_KEY } from "@/lib/parspack/session-storage";
 import type { ParspackZone } from "@/lib/parspack/types";
 import { useTokenSession } from "@/providers/token-session-provider";
-
-const ACTIVE_ZONE_STORAGE_KEY = "parspack_active_zone_uuid";
 
 type ZoneSelection = {
   tokenVersion: number;
@@ -59,13 +58,15 @@ export function ActiveZoneProvider({ children }: ActiveZoneProviderProps) {
     previousTokenRef.current = token;
 
     if (tokenChanged || !token) {
-      window.sessionStorage.removeItem(ACTIVE_ZONE_STORAGE_KEY);
+      window.sessionStorage.removeItem(PARSPACK_ACTIVE_ZONE_STORAGE_KEY);
     }
 
     const storedZoneUuid =
       tokenChanged || !token
         ? null
-        : window.sessionStorage.getItem(ACTIVE_ZONE_STORAGE_KEY)?.trim() || null;
+        : window.sessionStorage
+            .getItem(PARSPACK_ACTIVE_ZONE_STORAGE_KEY)
+            ?.trim() || null;
     let cancelled = false;
 
     queueMicrotask(() => {
@@ -103,7 +104,10 @@ export function ActiveZoneProvider({ children }: ActiveZoneProviderProps) {
     let cancelled = false;
 
     if (activeZone) {
-      window.sessionStorage.setItem(ACTIVE_ZONE_STORAGE_KEY, activeZone.uuid);
+      window.sessionStorage.setItem(
+        PARSPACK_ACTIVE_ZONE_STORAGE_KEY,
+        activeZone.uuid,
+      );
 
       if (selectedUuid !== activeZone.uuid) {
         queueMicrotask(() => {
@@ -113,7 +117,7 @@ export function ActiveZoneProvider({ children }: ActiveZoneProviderProps) {
         });
       }
     } else {
-      window.sessionStorage.removeItem(ACTIVE_ZONE_STORAGE_KEY);
+      window.sessionStorage.removeItem(PARSPACK_ACTIVE_ZONE_STORAGE_KEY);
 
       if (selectedUuid !== null) {
         queueMicrotask(() => {
@@ -132,7 +136,10 @@ export function ActiveZoneProvider({ children }: ActiveZoneProviderProps) {
   const setActiveZone = useCallback(
     (zone: ParspackZone) => {
       setUserSelection({ tokenVersion, uuid: zone.uuid });
-      window.sessionStorage.setItem(ACTIVE_ZONE_STORAGE_KEY, zone.uuid);
+      window.sessionStorage.setItem(
+        PARSPACK_ACTIVE_ZONE_STORAGE_KEY,
+        zone.uuid,
+      );
     },
     [tokenVersion],
   );
