@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 
-import { ExportCurrentResultsButton } from "@/components/logs/export-current-results-button";
+import { ExportLogsActions } from "@/components/logs/export-logs-actions";
 import { LogDetailDrawer } from "@/components/logs/log-detail-drawer";
 import { LogKpiCards } from "@/components/logs/log-kpi-cards";
 import { LogsFilters } from "@/components/logs/logs-filters";
@@ -28,9 +28,11 @@ import {
   type SeoQuickFilter,
 } from "@/lib/parspack/seo-quick-filters";
 import { useActiveZone } from "@/providers/active-zone-provider";
+import { useTokenSession } from "@/providers/token-session-provider";
 
 export function AccessLogsSection() {
-  const { activeDomain } = useActiveZone();
+  const { activeDomain, activeZoneUuid } = useActiveZone();
+  const { token } = useTokenSession();
   const [draftFilters, setDraftFilters] = useState<AccessLogFilterDraft>(
     EMPTY_ACCESS_LOG_FILTERS,
   );
@@ -163,12 +165,13 @@ export function AccessLogsSection() {
                   ? "Refreshing..."
                   : `${logs.length} records`}
             </Badge>
-            <ExportCurrentResultsButton
+            <ExportLogsActions
+              appliedFilters={appliedFilters}
+              currentLogs={logs}
               domain={activeDomain}
-              from={appliedFilters.from}
-              isLoading={accessLogsQuery.data === undefined}
-              logs={logs}
-              to={appliedFilters.to}
+              isLoadingCurrent={accessLogsQuery.data === undefined}
+              token={token}
+              zoneUuid={activeZoneUuid}
             />
           </div>
         </CardHeader>

@@ -5,6 +5,8 @@ export type ExportAccessLogsOptions = {
   domain?: string | null;
   from?: string;
   to?: string;
+  scope?: "current" | "all";
+  signal?: AbortSignal;
 };
 
 export type AccessLogExportRow = {
@@ -102,8 +104,15 @@ export function buildAccessLogsFilename({
   domain,
   from,
   to,
+  scope = "current",
 }: Omit<ExportAccessLogsOptions, "logs">): string {
-  const filenameParts = ["parspack-access-logs", domain, from, to]
+  const filenameParts = [
+    "parspack-access-logs",
+    domain,
+    from,
+    to,
+    scope === "all" ? "all" : undefined,
+  ]
     .filter((part): part is string => Boolean(part?.trim()))
     .map(sanitizeFilenamePart)
     .filter(Boolean);
@@ -116,12 +125,19 @@ export async function exportAccessLogsToExcel({
   domain,
   from,
   to,
+  scope = "current",
+  signal,
 }: ExportAccessLogsOptions): Promise<void> {
   if (logs.length === 0) {
     throw new Error("Cannot export an empty access-log page.");
   }
 
   const XLSX = await import("xlsx");
+
+  if (signal?.aborted) {
+    throw new DOMException("The operation was aborted.", "AbortError");
+  }
+
   const worksheet = XLSX.utils.json_to_sheet(accessLogsToExportRows(logs), {
     header: ACCESS_LOG_EXPORT_COLUMNS,
   });
@@ -134,7 +150,14 @@ export async function exportAccessLogsToExcel({
 
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Access Logs");
-  XLSX.writeFile(workbook, buildAccessLogsFilename({ domain, from, to }), {
-    compression: true,
-  });
+
+  if (signal?.aborted) {
+    throw new DOMException("The operation was aborted.", "AbortError");
+  }
+
+  XLSX.writeFile(
+    workbook,
+    buildAccessLogsFilename({ domain, from, to, scope }),
+    { compression: true },
+  );
 }
